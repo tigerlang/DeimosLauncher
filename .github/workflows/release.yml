@@ -22,9 +22,7 @@ jobs:
             packages: aiohttp pywebview PySide6-Essentials
             flags: >-
               --windows-console-mode=disable
-              --include-package=webview --include-package-data=webview
-              --include-package=clr_loader --include-package-data=clr_loader
-              --include-package=pythonnet --include-package-data=pythonnet
+              --include-package-data=clr_loader --include-package-data=pythonnet
               --include-module=clr
           - target: linux-x86_64
             os: ubuntu-22.04
