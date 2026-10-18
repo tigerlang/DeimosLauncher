@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "**"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - target: windows-x86_64
+            os: windows-latest
+            binary: DeimosLauncher.exe
+            packages: aiohttp pywebview PySide6-Essentials
+            flags: >-
+              --windows-console-mode=disable
+              --include-package=webview --include-package-data=webview
+              --include-package=clr_loader --include-package-data=clr_loader
+              --include-package=pythonnet --include-package-data=pythonnet
+              --include-module=clr
+          - target: linux-x86_64
+            os: ubuntu-22.04
+            binary: DeimosLauncher
+            packages: aiohttp PySide6-Essentials
+            flags: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y patchelf libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
+
+      - name: Install Python packages
+        run: python -m pip install --upgrade pip nuitka ordered-set zstandard ${{ matrix.packages }}
+
+      - name: Compile with Nuitka
+        shell: bash
+        run: |
+          python -m nuitka --onefile --assume-yes-for-downloads \
+            --enable-plugin=pyside6 --include-data-dir=ui=ui \
+            --output-dir=build --output-filename=${{ matrix.binary }} \
+            ${{ matrix.flags }} main.py
+
+      - name: Package
+        shell: bash
+        run: |
+          mkdir dist
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cp "build/${{ matrix.binary }}" "dist/DeimosLauncher-${{ matrix.target }}.exe"
+          else
+            tar -czf "dist/DeimosLauncher-${{ matrix.target }}.tar.gz" -C build "${{ matrix.binary }}"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DeimosLauncher-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create checksums
+        run: cd dist && sha256sum * > SHA256SUMS
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes

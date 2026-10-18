@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<title>Deimos Launcher</title>
+<style>
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;padding:0}
+body{position:relative;font-family:"Segoe UI",Cantarell,"Helvetica Neue",Arial,sans-serif;font-size:13px;color:#d6d7de;background:#1a1b1f;overflow:hidden;-ms-user-select:none;user-select:none}
+.moon{position:absolute;right:-60px;bottom:50px;width:290px;height:290px}
+.app{position:relative;display:flex;height:100%}
+.side{width:150px;padding:18px 0;background:#141519;border-right:1px solid #26272d}
+.title{padding:0 18px 18px;font-size:13px;font-weight:600;letter-spacing:.5px;color:#fff}
+.title span{display:block;margin-top:2px;font-size:11px;font-weight:400;color:#737580;letter-spacing:0}
+.nav{display:block;width:100%;padding:8px 18px;border:0;border-left:2px solid transparent;background:transparent;color:#9a9ca8;font:inherit;text-align:left;cursor:pointer}
+.nav:hover{color:#fff;background:#1b1c21}
+.nav.active{color:#fff;border-left-color:#5b8def;background:#1b1c21}
+.main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column}
+.content{flex:1;min-height:0;padding:22px 28px;overflow:auto}
+.view{display:none;max-width:540px}
+.view.active{display:block}
+h1{margin:0 0 18px;font-size:16px;font-weight:600;color:#fff}
+.label{display:block;margin:0 0 5px;font-size:12px;color:#8a8c98}
+select,input[type=text]{width:100%;height:30px;margin-bottom:14px;padding:0 9px;border:1px solid #34353d;border-radius:3px;background:#23242a;color:#e6e7ee;font:inherit;outline:none}
+select:focus,input[type=text]:focus{border-color:#5b8def}
+.cols{display:flex}
+.cols .col{flex:1;margin-right:12px}
+.cols .col:last-child{margin-right:0}
+.check{display:block;margin:-4px 0 16px;color:#9a9ca8;cursor:pointer}
+input[type=range]{width:100%;margin:2px 0 16px}
+button.btn{height:30px;padding:0 16px;border:1px solid #3a3b44;border-radius:3px;background:#2a2b32;color:#e6e7ee;font:inherit;cursor:pointer}
+button.btn:hover{background:#32333b}
+button.btn.primary{border-color:#5b8def;background:#5b8def;color:#fff}
+button.btn.primary:hover{background:#6d9aff}
+button.btn:disabled{opacity:.45;cursor:default}
+button.btn.wide{width:100%;height:34px}
+.inline{display:flex;margin-bottom:14px}
+.inline select{width:90px;margin:0 8px 0 0}
+.note{margin-top:8px;font-size:12px;color:#737580}
+.search{display:flex;margin-bottom:12px}
+.search input{margin:0 8px 0 0}
+.list-title{margin:18px 0 6px;font-size:12px;color:#8a8c98}
+.row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #26272d}
+.info{flex:1;min-width:0;margin-right:10px}
+.name{color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.muted{color:#737580}
+.desc{margin-top:1px;font-size:12px;color:#8a8c98;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.count{margin-right:12px;font-size:12px;color:#737580}
+.empty{padding:10px 0;color:#737580}
+.footer{padding:0 28px 9px;background:#141519;border-top:1px solid #26272d}
+.track{height:3px;margin:0 -28px 8px;background:#26272d;overflow:hidden}
+.bar{height:100%;width:0;background:#5b8def;transition:width .2s}
+.bar.busy{width:30%;animation:slide 1s linear infinite alternate}
+@keyframes slide{from{margin-left:0}to{margin-left:70%}}
+.status{height:16px;font-size:12px;color:#9a9ca8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status.error{color:#ee7b88}
+</style>
+</head>
+<body>
+<svg class="moon" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="surface" cx="34%" cy="30%" r="85%">
+      <stop offset="0" stop-color="#b0a79a"/>
+      <stop offset=".55" stop-color="#82796e"/>
+      <stop offset="1" stop-color="#47423b"/>
+    </radialGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="1" y2="1">
+      <stop offset=".4" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".62"/>
+    </linearGradient>
+    <radialGradient id="crater" cx="50%" cy="50%" r="50%" fx="36%" fy="36%">
+      <stop offset="0" stop-color="#26221e" stop-opacity=".55"/>
+      <stop offset=".75" stop-color="#38332e" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#e0d7ca" stop-opacity=".2"/>
+    </radialGradient>
+  </defs>
+  <path d="M38,158 C30,104 80,52 146,42 C212,34 264,70 270,132 C276,196 232,256 166,264 C100,272 46,216 38,158 Z" fill="url(#surface)"/>
+  <ellipse cx="190" cy="170" rx="42" ry="35" transform="rotate(-18 190 170)" fill="url(#crater)"/>
+  <ellipse cx="110" cy="112" rx="27" ry="22" transform="rotate(-25 110 112)" fill="url(#crater)"/>
+  <ellipse cx="148" cy="218" rx="19" ry="15" fill="url(#crater)"/>
+  <ellipse cx="82" cy="176" rx="12" ry="10" fill="url(#crater)"/>
+  <ellipse cx="226" cy="104" rx="11" ry="9" fill="url(#crater)"/>
+  <ellipse cx="146" cy="68" rx="9" ry="8" fill="url(#crater)"/>
+  <ellipse cx="214" cy="226" rx="9" ry="8" fill="url(#crater)"/>
+  <ellipse cx="62" cy="130" rx="6" ry="5" fill="url(#crater)"/>
+  <path d="M38,158 C30,104 80,52 146,42 C212,34 264,70 270,132 C276,196 232,256 166,264 C100,272 46,216 38,158 Z" fill="url(#shade)"/>
+</svg>
+<div class="app">
+  <div class="side">
+    <div class="title">Deimos<span>Launcher 0.1</span></div>
+    <button class="nav active" id="nav-play" onclick="showView('play')">Play</button>
+    <button class="nav" id="nav-mods" onclick="showView('mods')">Mods</button>
+    <button class="nav" id="nav-settings" onclick="showView('settings')">Settings</button>
+  </div>
+  <div class="main">
+    <div class="content">
+      <div class="view active" id="view-play">
+        <h1>Play</h1>
+        <div class="cols">
+          <div class="col">
+            <label class="label">Version</label>
+            <select id="version"><option>Loading...</option></select>
+          </div>
+          <div class="col">
+            <label class="label">Loader</label>
+            <select id="loader">
+              <option value="vanilla">Vanilla</option>
+              <option value="fabric">Fabric</option>
+              <option value="quilt">Quilt</option>
+            </select>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="snapshots"> Show snapshots</label>
+        <label class="label">Username</label>
+        <input type="text" id="username" maxlength="16" spellcheck="false">
+        <button class="btn primary wide act" id="play" onclick="play()">Play</button>
+      </div>
+      <div class="view" id="view-mods">
+        <h1>Mods</h1>
+        <div class="muted" id="mods-target"></div>
+        <div id="mods-body" style="display:none">
+          <div class="search">
+            <input type="text" id="mod-query" placeholder="Search Modrinth" spellcheck="false">
+            <button class="btn" onclick="searchMods()">Search</button>
+          </div>
+          <div id="mod-results"></div>
+          <div class="list-title">Installed</div>
+          <div id="mod-installed"></div>
+        </div>
+      </div>
+      <div class="view" id="view-settings">
+        <h1>Settings</h1>
+        <label class="label" id="memory-label">Memory</label>
+        <input type="range" id="memory" min="1024" max="16384" step="512" value="2048">
+        <label class="label">Java path</label>
+        <input type="text" id="java" placeholder="Auto-detect" spellcheck="false">
+        <label class="label">Install Java</label>
+        <div class="inline">
+          <select id="java-version">
+            <option value="8">Java 8</option>
+            <option value="17">Java 17</option>
+            <option value="21" selected>Java 21</option>
+            <option value="25">Java 25</option>
+          </select>
+          <button class="btn act" id="install-java">Install</button>
+        </div>
+        <label class="label">Folders</label>
+        <div class="inline">
+          <button class="btn" onclick="call('open_folder', ['root'])">Open launcher folder</button>
+          <button class="btn" style="margin-left:8px" onclick="call('open_folder', ['versions'])">Open versions folder</button>
+        </div>
+        <label class="label">Delete version</label>
+        <div class="inline">
+          <select id="installed-version" style="width:200px"></select>
+          <button class="btn act" id="delete-version">Delete</button>
+        </div>
+        <div class="note">The launcher picks the Java version each game version needs, including installed runtimes.</div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="track"><div class="bar" id="bar"></div></div>
+      <div class="status" id="status">Ready</div>
+    </div>
+  </div>
+</div>
+<script>
+var settings = {};
+var wasBusy = false;
+var reloadAfter = false;
+
+function $(id) { return document.getElementById(id); }
+
+function call(name, args) {
+  return window.pywebview.api[name].apply(null, args || []);
+}
+
+function element(tag, className, text) {
+  var node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function showView(name) {
+  var names = ['play', 'mods', 'settings'];
+  for (var i = 0; i < names.length; i++) {
+    $('view-' + names[i]).className = 'view' + (names[i] === name ? ' active' : '');
+    $('nav-' + names[i]).className = 'nav' + (names[i] === name ? ' active' : '');
+  }
+  if (name === 'mods') refreshMods();
+  if (name === 'settings') loadInstalled();
+}
+
+function collect() {
+  return {
+    username: $('username').value,
+    memory_mb: parseInt($('memory').value, 10),
+    java_path: $('java').value,
+    version: $('version').value,
+    loader: $('loader').value,
+    snapshots: $('snapshots').checked
+  };
+}
+
+function save() {
+  settings = collect();
+  call('save_settings', [settings]);
+}
+
+function updateMemory() {
+  $('memory-label').textContent = 'Memory: ' + $('memory').value + ' MB';
+}
+
+function setVersions(options) {
+  var select = $('version');
+  select.innerHTML = '';
+  for (var i = 0; i < options.length; i++) {
+    var option = document.createElement('option');
+    option.value = options[i].id;
+    option.text = options[i].label;
+    select.appendChild(option);
+  }
+}
+
+function loadVersions() {
+  var wanted = $('version').value || settings.version;
+  call('get_versions', [$('snapshots').checked]).then(function (list) {
+    if (!list.length) {
+      setVersions([{ id: '', label: 'No versions available' }]);
+      return;
+    }
+    var options = [];
+    for (var i = 0; i < list.length; i++) {
+      options.push({ id: list[i].id, label: list[i].id + (list[i].installed ? '  (installed)' : '') });
+    }
+    setVersions(options);
+    $('version').value = wanted;
+    if ($('version').selectedIndex < 0) $('version').selectedIndex = 0;
+  }, function () {
+    setVersions([{ id: '', label: 'Failed to load versions' }]);
+  });
+}
+
+function play() {
+  save();
+  call('play', [settings.version, settings.loader, settings.username, settings.memory_mb, settings.java_path]);
+}
+
+function formatCount(value) {
+  if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+  if (value >= 1000) return Math.round(value / 1000) + 'K';
+  return String(value);
+}
+
+function modTarget() {
+  return { version: $('version').value, loader: $('loader').value };
+}
+
+function refreshMods() {
+  var target = modTarget();
+  var usable = target.loader !== 'vanilla' && target.version;
+  $('mods-body').style.display = usable ? 'block' : 'none';
+  $('mods-target').textContent = usable
+    ? 'Minecraft ' + target.version + ' / ' + target.loader.charAt(0).toUpperCase() + target.loader.slice(1)
+    : 'Select the Fabric or Quilt loader on the Play tab to manage mods.';
+  if (!usable) return;
+  call('list_mods', [target.version, target.loader]).then(renderInstalled);
+}
+
+function renderInstalled(list) {
+  var box = $('mod-installed');
+  box.innerHTML = '';
+  if (!list.length) box.appendChild(element('div', 'empty', 'No mods installed'));
+  for (var i = 0; i < list.length; i++) {
+    box.appendChild(installedRow(list[i]));
+  }
+}
+
+function installedRow(mod) {
+  var row = element('div', 'row');
+  var info = element('div', 'info');
+  info.appendChild(element('div', 'name', mod.title));
+  if (mod.dependency) info.appendChild(element('div', 'desc', 'Dependency'));
+  var button = element('button', 'btn act', 'Remove');
+  button.onclick = function () {
+    var target = modTarget();
+    call('remove_mod', [mod.id, target.version, target.loader]).then(refreshMods);
+  };
+  row.appendChild(info);
+  row.appendChild(button);
+  return row;
+}
+
+function searchMods() {
+  var target = modTarget();
+  var box = $('mod-results');
+  box.innerHTML = '';
+  call('search_mods', [$('mod-query').value, target.version, target.loader]).then(function (hits) {
+    if (!hits.length) box.appendChild(element('div', 'empty', 'Nothing found'));
+    for (var i = 0; i < hits.length; i++) box.appendChild(resultRow(hits[i]));
+  }, function () {
+    box.appendChild(element('div', 'empty', 'Search failed'));
+  });
+}
+
+function resultRow(hit) {
+  var row = element('div', 'row');
+  var info = element('div', 'info');
+  var name = element('div', 'name', hit.title + ' ');
+  name.appendChild(element('span', 'muted', 'by ' + hit.author));
+  info.appendChild(name);
+  info.appendChild(element('div', 'desc', hit.description));
+  var button = element('button', 'btn act', 'Install');
+  button.onclick = function () {
+    var target = modTarget();
+    call('install_mod', [hit.id, target.version, target.loader]);
+  };
+  row.appendChild(info);
+  row.appendChild(element('div', 'count', formatCount(hit.downloads)));
+  row.appendChild(button);
+  return row;
+}
+
+function loadInstalled() {
+  call('installed_versions').then(function (list) {
+    var select = $('installed-version');
+    select.innerHTML = '';
+    for (var i = 0; i < list.length; i++) {
+      var option = document.createElement('option');
+      option.value = list[i];
+      option.text = list[i];
+      select.appendChild(option);
+    }
+    if (!list.length) {
+      var empty = document.createElement('option');
+      empty.value = '';
+      empty.text = 'No versions installed';
+      select.appendChild(empty);
+    }
+  });
+}
+
+function deleteVersion() {
+  var id = $('installed-version').value;
+  if (!id) return;
+  if (confirm('Delete ' + id + ' completely? This removes its files, loader profiles, mods and modded worlds. Shared vanilla worlds are kept.')) {
+    reloadAfter = true;
+    call('delete_version', [id]);
+  }
+}
+
+function megabytes(bytes) {
+  return (bytes / 1048576).toFixed(1);
+}
+
+function render(state) {
+  var determinate = state.total > 0 && state.stage.indexOf('Downloading') === 0;
+  var percent = determinate ? Math.min(100, Math.round(state.done * 100 / state.total)) : 0;
+  var bar = $('bar');
+  if (determinate) {
+    bar.className = 'bar';
+    bar.style.width = percent + '%';
+  } else if (state.playing) {
+    bar.className = 'bar';
+    bar.style.width = '100%';
+  } else if (state.busy) {
+    bar.className = 'bar busy';
+    bar.style.width = '';
+  } else {
+    bar.className = 'bar';
+    bar.style.width = '0';
+  }
+  var text = state.error || (state.stage === 'Idle' ? 'Ready' : state.stage);
+  if (determinate) {
+    text += ' - ' + megabytes(state.done) + ' / ' + megabytes(state.total) + ' MB (' + percent + '%)';
+  }
+  $('status').textContent = text;
+  $('status').className = 'status' + (state.error ? ' error' : '');
+  var buttons = document.querySelectorAll('button.act');
+  for (var i = 0; i < buttons.length; i++) buttons[i].disabled = state.busy;
+  $('play').textContent = state.playing ? 'Running' : (state.busy ? 'Working' : 'Play');
+  if (wasBusy && !state.busy) {
+    refreshMods();
+    if (reloadAfter) {
+      reloadAfter = false;
+      loadVersions();
+      loadInstalled();
+    }
+  }
+  wasBusy = state.busy;
+}
+
+function poll() {
+  call('get_state').then(function (state) {
+    render(state);
+    setTimeout(poll, 250);
+  }, function () {
+    setTimeout(poll, 1000);
+  });
+}
+
+function init() {
+  call('get_settings').then(function (loaded) {
+    settings = loaded;
+    $('username').value = loaded.username;
+    $('memory').value = loaded.memory_mb;
+    $('java').value = loaded.java_path;
+    $('loader').value = loaded.loader;
+    $('snapshots').checked = loaded.snapshots;
+    updateMemory();
+    loadVersions();
+  });
+  poll();
+}
+
+$('username').onchange = save;
+$('java').onchange = save;
+$('version').onchange = save;
+$('loader').onchange = save;
+$('memory').oninput = updateMemory;
+$('memory').onchange = save;
+$('snapshots').onchange = function () { save(); loadVersions(); };
+$('mod-query').onkeydown = function (event) { if (event.keyCode === 13) searchMods(); };
+$('delete-version').onclick = deleteVersion;
+$('install-java').onclick = function () { call('install_java', [parseInt($('java-version').value, 10)]); };
+window.addEventListener('pywebviewready', init);
+</script>
+</body>
+</html>
